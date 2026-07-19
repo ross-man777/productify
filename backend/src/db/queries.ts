@@ -9,6 +9,10 @@ import {
   type NewProduct,
 } from "./schema";
 
+// Update DTOs
+export type UpdateUserData = Partial<Omit<NewUser, "id" | "createdAt" | "updatedAt">>;
+export type UpdateProductData = Partial<Omit<NewProduct, "id" | "userId" | "createdAt" | "updatedAt">>;
+
 // USER QUERIES
 export const createUser = async (data: NewUser) => {
   const [user] = await db.insert(users).values(data).returning();
@@ -19,7 +23,7 @@ export const getUserById = async (id: string) => {
   return db.query.users.findFirst({ where: eq(users.id, id) });
 };
 
-export const updateUser = async (id: string, data: Partial<NewUser>) => {
+export const updateUser = async (id: string, data: UpdateUserData) => {
   const [user] = await db
     .update(users)
     .set(data)
@@ -30,10 +34,16 @@ export const updateUser = async (id: string, data: Partial<NewUser>) => {
 
 // upsert => create or update
 export const upsertUser = async (data: NewUser) => {
-  const existingUser = await getUserById(data.id);
-  if (existingUser) return updateUser(data.id, data);
-
-  return createUser(data);
+  const { id, ...updateFields } = data;
+  const [user] = await db
+    .insert(users)
+    .values(data)
+    .onConflictDoUpdate({
+      target: users.id,
+      set: updateFields,
+    })
+    .returning();
+  return user;
 };
 
 // PRODUCT QUERIES
@@ -71,10 +81,10 @@ export const getProductsByUserId = async (userId: string) => {
   });
 };
 
-export const updateProduct = async (id: string, data: Partial<NewProduct>) => {
+export const updateProduct = async (id: string, data: UpdateProductData) => {
   const [product] = await db
     .update(products)
-    .set(data)
+    .set({ ...data, updatedAt: new Date() })
     .where(eq(products.id, id))
     .returning();
   return product;
