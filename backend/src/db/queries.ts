@@ -10,8 +10,12 @@ import {
 } from "./schema";
 
 // Update DTOs
-export type UpdateUserData = Partial<Omit<NewUser, "id" | "createdAt" | "updatedAt">>;
-export type UpdateProductData = Partial<Omit<NewProduct, "id" | "userId" | "createdAt" | "updatedAt">>;
+export type UpdateUserData = Partial<
+  Omit<NewUser, "id" | "createdAt" | "updatedAt">
+>;
+export type UpdateProductData = Partial<
+  Omit<NewProduct, "id" | "userId" | "createdAt" | "updatedAt">
+>;
 
 // USER QUERIES
 export const createUser = async (data: NewUser) => {
@@ -23,7 +27,11 @@ export const getUserById = async (id: string) => {
   return db.query.users.findFirst({ where: eq(users.id, id) });
 };
 
-export const updateUser = async (id: string, data: UpdateUserData) => {
+export const updateUser = async (id: string, data: Partial<NewUser>) => {
+  const existingUser = await getUserById(id);
+  if (!existingUser) {
+    throw new Error(`User with id ${id} not found`);
+  }
   const [user] = await db
     .update(users)
     .set(data)
@@ -33,14 +41,21 @@ export const updateUser = async (id: string, data: UpdateUserData) => {
 };
 
 // upsert => create or update
+// 2 request => 1 suceed => 1 failed
 export const upsertUser = async (data: NewUser) => {
-  const { id, ...updateFields } = data;
+  // this is what we have done first
+  //const existingUser = await getUserById(data.id);
+  //if (existingUser) return updateUser(data.id, data);
+
+  //return createUser(data);
+
+  // and this is what Coderabbit suggested
   const [user] = await db
     .insert(users)
     .values(data)
     .onConflictDoUpdate({
       target: users.id,
-      set: updateFields,
+      set: data,
     })
     .returning();
   return user;
@@ -81,7 +96,11 @@ export const getProductsByUserId = async (userId: string) => {
   });
 };
 
-export const updateProduct = async (id: string, data: UpdateProductData) => {
+export const updateProduct = async (id: string, data: Partial<NewProduct>) => {
+  const existingProduct = await getProductById(id);
+  if (!existingProduct) {
+    throw new Error(`Product with id ${id} not found`);
+  }
   const [product] = await db
     .update(products)
     .set({ ...data, updatedAt: new Date() })
@@ -91,6 +110,10 @@ export const updateProduct = async (id: string, data: UpdateProductData) => {
 };
 
 export const deleteProduct = async (id: string) => {
+  const existingProduct = await getProductById(id);
+  if (!existingProduct) {
+    throw new Error(`Product with id ${id} not found`);
+  }
   const [product] = await db
     .delete(products)
     .where(eq(products.id, id))
@@ -105,6 +128,10 @@ export const createComment = async (data: NewComment) => {
 };
 
 export const deleteComment = async (id: string) => {
+  const existingComment = await getCommentById(id);
+  if (!existingComment) {
+    throw new Error(`Comment with id ${id} not found`);
+  }
   const [comment] = await db
     .delete(comments)
     .where(eq(comments.id, id))
