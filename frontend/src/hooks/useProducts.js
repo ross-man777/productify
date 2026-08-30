@@ -8,6 +8,7 @@ import {
   deleteProduct,
   getProductById,
   getMyProducts,
+  updateProduct,
 } from "../lib/api";
 
 export const useProducts = () => {
@@ -41,4 +42,8 @@ export const useDeleteProduct = () => {
 
 export const useMyProducts = () => {
   return useQuery({ queryKey: ["myProduct"], queryFn: getMyProducts });
+};
+
+export const useUpdateProduct = () => {
+  return useMutation({ mutationFn: updateProduct });
 };
