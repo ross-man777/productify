@@ -21,6 +21,11 @@ function App() {
       <main className="max-w-5xl mx-auto p-4 py-8">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          {/* <Route
+            path="/product/:id"
+            element={isSignedIn ? <ProductPage /> : <Navigate to={"/"} />}
+          />
+          i can change to this code, if if dont want to show product if not signIn */}
           <Route path="/product/:id" element={<ProductPage />} />
           <Route
             path="/profile"
